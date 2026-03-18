@@ -1,16 +1,90 @@
-# React + Vite
+# Particlez - 3D Background Creator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive React + Three.js app for generating abstract 3D particle backgrounds and exporting high-resolution PNGs.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Real-time 3D particle scene with camera orbit controls
+- Layout generation modes:
+  - `scatter`
+  - `grid`
+  - `spiral`
+- Theme-based color palettes:
+  - `neon`, `ocean`, `sunset`, `monochrome`, `pastel`, `custom`
+- Background designer:
+  - `solid` mode
+  - `gradient` mode with `linear`, `radial`, and `organic` (blob-style) variants
+- Connector lines between nearby particles with:
+  - toggle on/off
+  - distance threshold
+  - independent connector opacity
+- Optional post-processing toggle
+- PNG export with aspect ratio presets (`16:9`, `1:1`, `5:4`, `9:16`, `4:5`)
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 18
+- Vite
+- Three.js
+- `@react-three/fiber`
+- `@react-three/drei`
+- `@react-three/postprocessing`
+- Leva (control panel)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js 18+ (Node 22 tested)
+- npm
+
+### Install
+
+```bash
+npm install
+```
+
+### Run Dev Server
+
+```bash
+npm run dev
+```
+
+Default local URL:
+
+```text
+http://127.0.0.1:5173/
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+### Lint
+
+```bash
+npm run lint
+```
+
+## Usage Notes
+
+- Use the Leva panel to adjust scene generation, theme, background style, and connector behavior.
+- Export controls are fixed as a DOM overlay, so they stay in place regardless of camera zoom/pan.
+- Export resolution is currently fixed to a high-quality target based on selected aspect ratio.
+
+## Project Structure
+
+```text
+src/
+  components/
+    Effects.jsx
+    ExportUI.jsx
+    PlaneGroup.jsx
+  utils/
+    generation.js
+    themes.js
+  Scene.jsx
+  App.jsx
+```
