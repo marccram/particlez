@@ -1,12 +1,14 @@
-import { EffectComposer, DepthOfField, Bloom, Vignette } from '@react-three/postprocessing'
-import { useControls } from 'leva'
+import { EffectComposer, DepthOfField, Bloom, Noise, ChromaticAberration } from '@react-three/postprocessing'
 
-export default function Effects() {
-    const { focusDistance, focalLength, bokehScale } = useControls('Effects', {
-        focusDistance: { value: 0, min: 0, max: 1, step: 0.01 },
-        focalLength: { value: 0.02, min: 0, max: 0.1, step: 0.001 },
-        bokehScale: { value: 2, min: 0, max: 10, step: 0.1 }
-    })
+export default function Effects({ config }) {
+    // Default values if not provided in config
+    const { 
+        focusDistance = 0, 
+        focalLength = 0.02, 
+        bokehScale = 2, 
+        noiseOpacity = 0.04, 
+        chromaticAberrationOffset = 0.0015 
+    } = config || {}
 
     return (
         <EffectComposer disableNormalPass>
@@ -17,6 +19,8 @@ export default function Effects() {
                 height={480}
             />
             <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.025} height={300} />
+            <Noise opacity={noiseOpacity} />
+            <ChromaticAberration offset={[chromaticAberrationOffset, chromaticAberrationOffset]} />
         </EffectComposer>
     )
 }

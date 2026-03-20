@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './ExportUI.css'
 
 const ratios = {
     '16:9': 16 / 9,
@@ -22,35 +23,19 @@ export default function ExportUI({ onExport }) {
     }
 
     return (
-        <div style={{
-            position: 'absolute',
-            bottom: 20,
-            left: 20,
-            zIndex: 30,
-            display: 'flex',
-            gap: '10px',
-            background: 'rgba(0,0,0,0.8)',
-            padding: '10px',
-            borderRadius: '8px'
-        }}>
+        <div className="export-ui">
             <select
                 value={selectedRatio}
                 onChange={(e) => setSelectedRatio(e.target.value)}
-                style={{ padding: '5px', borderRadius: '4px', background: '#333', color: 'white', border: 'none' }}
             >
-                {Object.keys(ratios).map(r => <option key={r} value={r}>{r}</option>)}
+                {Object.keys(ratios).map(r => (
+                    <option key={r} value={r}>{r} Aspect</option>
+                ))}
             </select>
             <button
+                className="export-btn"
                 onClick={handleExport}
                 disabled={isExporting}
-                style={{
-                    padding: '5px 15px',
-                    borderRadius: '4px',
-                    background: isExporting ? '#555' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    cursor: isExporting ? 'wait' : 'pointer'
-                }}
             >
                 {isExporting ? 'Exporting...' : 'Export PNG'}
             </button>

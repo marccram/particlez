@@ -1,10 +1,11 @@
-import { Canvas } from '@react-three/fiber'
-import { PerspectiveCamera, OrbitControls } from '@react-three/drei'
-import { useControls } from 'leva'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { PerspectiveCamera, OrbitControls, Environment, ContactShadows } from '@react-three/drei'
+import * as THREE from 'three'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import PlaneGroup from './components/PlaneGroup'
 import Effects from './components/Effects'
 import ExportUI from './components/ExportUI'
+import Controls from './components/Controls'
 import { generatePlanes } from './utils/generation'
 import { themes } from './utils/themes'
 
@@ -21,54 +22,72 @@ const hexToRgba = (hex, alpha = 1) => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
+const INITIAL_CONFIG = {
+    // Scene
+    count: 50,
+    layout: 'scatter',
+    spread: 5,
+    theme: 'neon',
+    size: 0.5,
+    sides: 32,
+    opacity: 0.6,
+    sizeVariation: 1,
+    rotationVariation: Math.PI,
+    
+    // Connections
+    connectParticles: false,
+    connectionDistance: 4,
+    connectorOpacity: 0.3,
+    
+    // Effects
+    enableEffects: true,
+    focusDistance: 0,
+    focalLength: 0.02,
+    bokehScale: 2,
+    noiseOpacity: 0.04,
+    chromaticAberrationOffset: 0.0015,
+    
+    // Background
+    backgroundMode: 'gradient',
+    solidColorIndex: 1,
+    gradientType: 'organic',
+    gradientAngle: 135,
+    
+    // Custom Colors
+    color1: '#ff00ff',
+    color2: '#00ffff',
+    color3: '#ffff00',
+    color4: '#ff0099',
+    color5: '#00ff99'
+}
+
+function CameraRig({ targetPosition }) {
+    const vec = new THREE.Vector3()
+    useFrame((state) => {
+        state.camera.position.lerp(vec.set(...targetPosition), 0.05)
+        state.camera.lookAt(0, 0, 0)
+    })
+    return null
+}
+
 export default function Scene() {
     const renderStateRef = useRef(null)
-
-    const controls = useControls('Scene', {
-        count: { value: 50, min: 1, max: 200, step: 1 },
-        layout: { value: 'scatter', options: ['grid', 'scatter', 'spiral'] },
-        spread: { value: 5, min: 1, max: 20, step: 0.5 },
-        theme: { value: 'neon', options: ['neon', 'ocean', 'sunset', 'monochrome', 'pastel', 'custom'] },
-        size: { value: 0.5, min: 0.1, max: 2, step: 0.1 },
-        sides: { value: 32, min: 3, max: 64, step: 1 },
-        opacity: { value: 0.6, min: 0, max: 1, step: 0.05 },
-        sizeVariation: { value: 1, min: 0, max: 3, step: 0.1 },
-        rotationVariation: { value: Math.PI, min: 0, max: Math.PI * 2, step: 0.1 },
-        connectParticles: { value: false },
-        connectionDistance: { value: 4, min: 1, max: 10, step: 0.5 },
-        connectorOpacity: { value: 0.3, min: 0, max: 1, step: 0.05 },
-        enableEffects: { value: false }
-    })
-
-    const customColors = useControls('Custom Colors', {
-        color1: { value: '#ff00ff' },
-        color2: { value: '#00ffff' },
-        color3: { value: '#ffff00' },
-        color4: { value: '#ff0099' },
-        color5: { value: '#00ff99' }
-    })
-
-    const backgroundControls = useControls('Background', {
-        mode: { value: 'gradient', options: ['solid', 'gradient'] },
-        solidColorIndex: { value: 1, min: 1, max: 5, step: 1 },
-        gradientType: { value: 'organic', options: ['linear', 'radial', 'organic'] },
-        gradientAngle: { value: 135, min: 0, max: 360, step: 1 }
-    })
-
+    const [config, setConfig] = useState(INITIAL_CONFIG)
     const [planes, setPlanes] = useState([])
+    const [targetCameraPos, setTargetCameraPos] = useState([0, 0, 20])
 
     const customColorArray = useMemo(() => ([
-        customColors.color1,
-        customColors.color2,
-        customColors.color3,
-        customColors.color4,
-        customColors.color5
-    ]), [customColors.color1, customColors.color2, customColors.color3, customColors.color4, customColors.color5])
+        config.color1,
+        config.color2,
+        config.color3,
+        config.color4,
+        config.color5
+    ]), [config.color1, config.color2, config.color3, config.color4, config.color5])
 
     const themeColors = useMemo(() => {
-        if (controls.theme === 'custom') return customColorArray
-        return themes[controls.theme] || themes.neon
-    }, [controls.theme, customColorArray])
+        if (config.theme === 'custom') return customColorArray
+        return themes[config.theme] || themes.neon
+    }, [config.theme, customColorArray])
 
     const palette = useMemo(() => {
         const filtered = themeColors.filter(Boolean)
@@ -84,20 +103,20 @@ export default function Scene() {
             palette[4] || palette[2] || '#264653'
         ]
 
-        if (backgroundControls.mode === 'solid') {
-            const index = Math.max(0, Math.min(4, backgroundControls.solidColorIndex - 1))
+        if (config.backgroundMode === 'solid') {
+            const index = Math.max(0, Math.min(4, config.solidColorIndex - 1))
             return {
                 backgroundColor: colors[index]
             }
         }
 
-        if (backgroundControls.gradientType === 'linear') {
+        if (config.gradientType === 'linear') {
             return {
-                backgroundImage: `linear-gradient(${backgroundControls.gradientAngle}deg, ${colors[0]} 0%, ${colors[1]} 25%, ${colors[2]} 50%, ${colors[3]} 75%, ${colors[4]} 100%)`
+                backgroundImage: `linear-gradient(${config.gradientAngle}deg, ${colors[0]} 0%, ${colors[1]} 25%, ${colors[2]} 50%, ${colors[3]} 75%, ${colors[4]} 100%)`
             }
         }
 
-        if (backgroundControls.gradientType === 'radial') {
+        if (config.gradientType === 'radial') {
             return {
                 backgroundImage: [
                     `radial-gradient(circle at 15% 20%, ${colors[0]} 0%, ${hexToRgba(colors[0], 0)} 45%)`,
@@ -117,20 +136,44 @@ export default function Scene() {
                 `linear-gradient(145deg, ${hexToRgba(colors[4], 0.95)} 0%, ${hexToRgba(colors[0], 0.88)} 100%)`
             ].join(', ')
         }
-    }, [palette, backgroundControls.mode, backgroundControls.solidColorIndex, backgroundControls.gradientType, backgroundControls.gradientAngle])
+    }, [palette, config.backgroundMode, config.solidColorIndex, config.gradientType, config.gradientAngle])
 
     useEffect(() => {
         const newPlanes = generatePlanes(
-            controls.count,
-            controls.layout,
-            controls.spread,
-            controls.theme,
+            config.count,
+            config.layout,
+            config.spread,
+            config.theme,
             customColorArray,
-            controls.sizeVariation,
-            controls.rotationVariation
+            config.sizeVariation,
+            config.rotationVariation
         )
         setPlanes(newPlanes)
-    }, [controls.count, controls.layout, controls.spread, controls.theme, controls.sizeVariation, controls.rotationVariation, customColors.color1, customColors.color2, customColors.color3, customColors.color4, customColors.color5])
+    }, [config.count, config.layout, config.spread, config.theme, config.sizeVariation, config.rotationVariation, config.color1, config.color2, config.color3, config.color4, config.color5])
+
+    const handleRandomize = () => {
+        const possibleThemes = Object.keys(themes).filter(t => t !== 'custom')
+        const randomTheme = possibleThemes[Math.floor(Math.random() * possibleThemes.length)]
+        const randomLayout = ['scatter', 'grid', 'spiral'][Math.floor(Math.random() * 3)]
+        
+        setConfig(prev => ({
+            ...prev,
+            theme: randomTheme,
+            layout: randomLayout,
+            count: Math.floor(Math.random() * 100) + 30,
+            spread: Math.random() * 15 + 5,
+            size: Math.random() * 0.8 + 0.2,
+            sides: Math.floor(Math.random() * 6) + 3,
+            opacity: Math.random() * 0.5 + 0.2
+        }))
+
+        // Randomize camera position for variety
+        setTargetCameraPos([
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10,
+            15 + Math.random() * 10
+        ])
+    }
 
     const handleExport = async (ratioLabel, targetRatio) => {
         const state = renderStateRef.current
@@ -170,11 +213,12 @@ export default function Scene() {
     }
 
     return (
-        <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
             <div
                 style={{
                     position: 'absolute',
                     inset: 0,
+                    transition: 'all 0.5s ease',
                     ...backgroundStyle
                 }}
             />
@@ -186,21 +230,25 @@ export default function Scene() {
                 }}
                 style={{ position: 'relative', zIndex: 1 }}
             >
+                <CameraRig targetPosition={targetCameraPos} />
                 <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
                 <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[10, 10, 5]} intensity={1} />
+                <Environment preset="city" />
+                <ContactShadows position={[0, -10, 0]} opacity={0.4} scale={40} blur={2} far={20} />
                 <PlaneGroup
                     data={planes}
-                    size={controls.size}
-                    sides={controls.sides}
-                    opacity={controls.opacity}
-                    connectParticles={controls.connectParticles}
-                    connectionDistance={controls.connectionDistance}
-                    connectorOpacity={controls.connectorOpacity}
+                    size={config.size}
+                    sides={config.sides}
+                    opacity={config.opacity}
+                    connectParticles={config.connectParticles}
+                    connectionDistance={config.connectionDistance}
+                    connectorOpacity={config.connectorOpacity}
                 />
-                {controls.enableEffects && <Effects />}
+                {config.enableEffects && <Effects config={config} />}
             </Canvas>
+            <Controls config={config} setConfig={setConfig} setTargetCameraPos={setTargetCameraPos} onRandomize={handleRandomize} />
             <ExportUI onExport={handleExport} />
         </div>
     )

@@ -3,13 +3,24 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 export default function PlaneGroup({ data, size = 0.5, sides = 4, opacity = 0.6, connectParticles = false, connectionDistance = 4, connectorOpacity = 0.3 }) {
-  const meshRef = useRef()
+  const groupRef = useRef()
 
-  // We can use InstancedMesh for performance if we have many planes, 
-  // but for now let's stick to individual meshes for easier individual control/animation if needed.
-  // Actually, for "beautiful backgrounds" with potentially many planes, InstancedMesh is better.
-  // However, to keep it simple for the MVP and allow different materials/transparency per plane easily,
-  // let's start with a group of meshes. If performance is an issue, we can refactor to InstancedMesh.
+  // Organic floating motion
+  useFrame((state) => {
+    if (!groupRef.current) return
+    const t = state.clock.getElapsedTime()
+    
+    groupRef.current.children.forEach((child, i) => {
+      if (child.type === 'Mesh') {
+        const offset = i * 100
+        // Gentle drifting
+        child.position.x += Math.sin(t * 0.2 + offset) * 0.002
+        child.position.y += Math.cos(t * 0.3 + offset) * 0.002
+        // Subtile rotation
+        child.rotation.z += Math.sin(t * 0.1 + offset) * 0.001
+      }
+    })
+  })
 
   const linesGeometry = useMemo(() => {
     if (!connectParticles) return null
@@ -18,12 +29,12 @@ export default function PlaneGroup({ data, size = 0.5, sides = 4, opacity = 0.6,
     const positions = data.map(d => new THREE.Vector3(...d.position))
 
     for (let i = 0; i < positions.length; i++) {
-      for (let j = i + 1; j < positions.length; j++) {
-        if (positions[i].distanceTo(positions[j]) < connectionDistance) {
-          points.push(positions[i])
-          points.push(positions[j])
+        for (let j = i + 1; j < positions.length; j++) {
+            if (positions[i].distanceTo(positions[j]) < connectionDistance) {
+                points.push(positions[i])
+                points.push(positions[j])
+            }
         }
-      }
     }
 
     if (points.length === 0) return null
@@ -33,7 +44,7 @@ export default function PlaneGroup({ data, size = 0.5, sides = 4, opacity = 0.6,
   }, [data, connectParticles, connectionDistance])
 
   return (
-    <group>
+    <group ref={groupRef}>
       {data.map((plane) => (
         <mesh
           key={plane.id}
@@ -42,16 +53,23 @@ export default function PlaneGroup({ data, size = 0.5, sides = 4, opacity = 0.6,
           scale={plane.scale}
         >
           <circleGeometry args={[size, sides]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             color={plane.color} 
             side={THREE.DoubleSide}
             transparent
             opacity={opacity}
-            roughness={0.35}
-            metalness={0.05}
+            transmission={0.5} // Glass-like transparency
+            thickness={1}      // Material thickness
+            roughness={0.1}
+            metalness={0.1}
+            iridescence={1}    // The "premium" shimmering look
+            iridescenceIOR={1.5}
+            iridescenceThicknessRange={[100, 400]}
+            clearcoat={1}
+            clearcoatRoughness={0.1}
             emissive={plane.color}
-            emissiveIntensity={0.12}
-            depthWrite={false} // Important for transparency
+            emissiveIntensity={0.2}
+            depthWrite={false}
           />
         </mesh>
       ))}
