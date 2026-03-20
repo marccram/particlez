@@ -1,0 +1,62 @@
+.export-ui {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.2);
+    font-family: 'Inter', sans-serif;
+}
+
+.export-ui select {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: white;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.export-ui select:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.export-btn {
+    padding: 8px 20px;
+    background: #00d2ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.2);
+}
+
+.export-btn:hover:not(:disabled) {
+    background: #33e1ff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 210, 255, 0.4);
+}
+
+.export-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.export-btn:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: wait;
+}
