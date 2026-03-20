@@ -4,22 +4,18 @@ Interactive React + Three.js app for generating abstract 3D particle backgrounds
 
 ## Features
 
-- Real-time 3D particle scene with camera orbit controls
-- Layout generation modes:
-  - `scatter`
-  - `grid`
-  - `spiral`
-- Theme-based color palettes:
+- **Iridescent Glass Materials**: High-end `MeshPhysicalMaterial` with transmission, thickness, and iridescence.
+- **Organic Floating Motion**: Smooth, noise-based drifting and rotation for a cinematic feel.
+- **Bespoke Glassmorphism UI**: A custom-built, translucent control panel for real-time scene manipulation.
+- **Curated Presets**: Quick-access styles including `Deep Ocean`, `Cyberpunk`, `Minimalist`, and `Golden Hour`.
+- **Cinematic Post-Processing**: Integrated Bloom, Depth of Field, Noise (film grain), and Chromatic Aberration.
+- **Real-time 3D Scene**: Interactive camera orbit controls and dynamic background gradients.
+- **Layout Generation Modes**:
+  - `scatter`, `grid`, `spiral`
+- **Theme-based Color Palettes**:
   - `neon`, `ocean`, `sunset`, `monochrome`, `pastel`, `custom`
-- Background designer:
-  - `solid` mode
-  - `gradient` mode with `linear`, `radial`, and `organic` (blob-style) variants
-- Connector lines between nearby particles with:
-  - toggle on/off
-  - distance threshold
-  - independent connector opacity
-- Optional post-processing toggle
-- PNG export with aspect ratio presets (`16:9`, `1:1`, `5:4`, `9:16`, `4:5`)
+- **Connector Lines**: Vertex-to-vertex connections between nearby particles with adjustable distance and intensity.
+- **PNG Export**: High-resolution export with aspect ratio presets (`16:9`, `1:1`, `5:4`, `9:16`, `4:5`).
 
 ## Tech Stack
 
@@ -29,13 +25,13 @@ Interactive React + Three.js app for generating abstract 3D particle backgrounds
 - `@react-three/fiber`
 - `@react-three/drei`
 - `@react-three/postprocessing`
-- Leva (control panel)
+- Custom CSS (Glassmorphism design system)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ (Node 22 tested)
+- Node.js 18+
 - npm
 
 ### Install
@@ -50,11 +46,7 @@ npm install
 npm run dev
 ```
 
-Default local URL:
-
-```text
-http://127.0.0.1:5173/
-```
+Default local URL: `http://localhost:5173/`
 
 ### Build
 
@@ -62,29 +54,26 @@ http://127.0.0.1:5173/
 npm run build
 ```
 
-### Lint
-
-```bash
-npm run lint
-```
-
 ## Usage Notes
 
-- Use the Leva panel to adjust scene generation, theme, background style, and connector behavior.
-- Export controls are fixed as a DOM overlay, so they stay in place regardless of camera zoom/pan.
-- Export resolution is currently fixed to a high-quality target based on selected aspect ratio.
+- **Control Panel**: Use the bespoke glassmorphism panel on the right to adjust geometry, scene layout, and lighting.
+- **Animated Transitions**: Selecting a preset triggers a smooth camera transition to a curated viewpoint.
+- **Exporting**: Use the bottom-left panel to select your desired aspect ratio and download a high-bit-depth PNG.
 
 ## Project Structure
 
 ```text
 src/
   components/
-    Effects.jsx
-    ExportUI.jsx
-    PlaneGroup.jsx
+    Controls.jsx      # Main glassmorphism control panel
+    Controls.css
+    Effects.jsx       # Post-processing stack
+    ExportUI.jsx      # Export configuration overlay
+    ExportUI.css
+    PlaneGroup.jsx    # Particle generation & animation logic
   utils/
-    generation.js
-    themes.js
-  Scene.jsx
+    generation.js     # Geometry generation algorithms
+    themes.js         # Color palette definitions
+  Scene.jsx           # Main 3D scene & camera rig
   App.jsx
 ```
