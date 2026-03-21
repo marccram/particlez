@@ -11,12 +11,14 @@ const ratios = {
 
 export default function ExportUI({ onExport }) {
     const [selectedRatio, setSelectedRatio] = useState('16:9')
+    const [transparentBackground, setTransparentBackground] = useState(false)
+    const [matchCurrentView, setMatchCurrentView] = useState(true)
     const [isExporting, setIsExporting] = useState(false)
 
     const handleExport = async () => {
         setIsExporting(true)
         try {
-            await onExport(selectedRatio, ratios[selectedRatio])
+            await onExport(selectedRatio, ratios[selectedRatio], transparentBackground, matchCurrentView)
         } finally {
             setIsExporting(false)
         }
@@ -27,11 +29,28 @@ export default function ExportUI({ onExport }) {
             <select
                 value={selectedRatio}
                 onChange={(e) => setSelectedRatio(e.target.value)}
+                disabled={matchCurrentView}
             >
                 {Object.keys(ratios).map(r => (
                     <option key={r} value={r}>{r} Aspect</option>
                 ))}
             </select>
+            <label className="transparent-toggle">
+                <input
+                    type="checkbox"
+                    checked={matchCurrentView}
+                    onChange={(e) => setMatchCurrentView(e.target.checked)}
+                />
+                <span>Match View</span>
+            </label>
+            <label className="transparent-toggle">
+                <input
+                    type="checkbox"
+                    checked={transparentBackground}
+                    onChange={(e) => setTransparentBackground(e.target.checked)}
+                />
+                <span>Transparent BG</span>
+            </label>
             <button
                 className="export-btn"
                 onClick={handleExport}
