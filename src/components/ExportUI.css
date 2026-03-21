@@ -27,9 +27,14 @@
     transition: all 0.2s ease;
 }
 
-.export-ui select:hover {
+.export-ui select:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.3);
     border-color: rgba(255, 255, 255, 0.2);
+}
+
+.export-ui select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .export-btn {
@@ -59,4 +64,25 @@
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.3);
     cursor: wait;
+}
+
+.transparent-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.transparent-toggle input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #00d2ff;
+}
+
+.transparent-toggle span {
+    white-space: nowrap;
 }

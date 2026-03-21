@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { PerspectiveCamera, OrbitControls, Environment, ContactShadows } from '@react-three/drei'
+import { PerspectiveCamera, OrbitControls, Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import PlaneGroup from './components/PlaneGroup'
@@ -175,40 +175,180 @@ export default function Scene() {
         ])
     }
 
-    const handleExport = async (ratioLabel, targetRatio) => {
+    const handleExport = async (ratioLabel, targetRatio, transparentBackground, matchCurrentView) => {
         const state = renderStateRef.current
-        if (!state || !targetRatio) return
+        if (!state) return
 
         const { gl, scene, camera } = state
+
+        // Save current camera state
         const originalSize = { width: gl.domElement.width, height: gl.domElement.height }
         const originalAspect = camera.aspect
+        const originalFov = camera.fov
+        const originalPosition = camera.position.clone()
+        const originalQuaternion = camera.quaternion.clone()
+
+        // If matchCurrentView is true, use current viewport aspect ratio
+        const exportRatio = matchCurrentView ? originalAspect : targetRatio
         const size = 1920
         let width
         let height
 
-        if (targetRatio > 1) {
+        if (exportRatio > 1) {
             width = size
-            height = size / targetRatio
+            height = size / exportRatio
         } else {
             height = size
-            width = size * targetRatio
+            width = size * exportRatio
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        // Temporarily restore camera to captured state (in case CameraRig moved it)
+        camera.position.copy(originalPosition)
+        camera.quaternion.copy(originalQuaternion)
 
+        // Adjust FOV to prevent stretching when aspect ratio changes
+        // We maintain the horizontal field of view to prevent distortion
+        if (!matchCurrentView && exportRatio !== originalAspect) {
+            // Convert FOV to radians and calculate new vertical FOV to maintain horizontal FOV
+            const vFovRad = (originalFov * Math.PI) / 180
+            const hFov = 2 * Math.atan(Math.tan(vFovRad / 2) * originalAspect)
+            const newVFovRad = 2 * Math.atan(Math.tan(hFov / 2) / exportRatio)
+            camera.fov = (newVFovRad * 180) / Math.PI
+        }
+
+        // Update size and aspect
         gl.setSize(width, height, false)
-        camera.aspect = targetRatio
+        camera.aspect = exportRatio
         camera.updateProjectionMatrix()
-        gl.render(scene, camera)
 
-        const dataURL = gl.domElement.toDataURL('image/png')
+        // Wait for the next frame to render with effects
+        await new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(resolve)
+            })
+        })
+
+        let dataURL
+
+        if (transparentBackground) {
+            // Export with transparent background
+            dataURL = gl.domElement.toDataURL('image/png')
+        } else {
+            // Composite background with 3D scene
+            const compositeCanvas = document.createElement('canvas')
+            compositeCanvas.width = width
+            compositeCanvas.height = height
+            const ctx = compositeCanvas.getContext('2d')
+
+            // Draw background
+            if (backgroundStyle.backgroundColor) {
+                // Solid color
+                ctx.fillStyle = backgroundStyle.backgroundColor
+                ctx.fillRect(0, 0, width, height)
+            } else if (backgroundStyle.backgroundImage) {
+                // Gradient
+                const tempDiv = document.createElement('div')
+                tempDiv.style.width = `${width}px`
+                tempDiv.style.height = `${height}px`
+                tempDiv.style.backgroundImage = backgroundStyle.backgroundImage
+                document.body.appendChild(tempDiv)
+
+                // Use html2canvas or manually recreate gradient
+                // For now, we'll recreate the gradient patterns manually
+                const colors = [
+                    palette[0] || '#0a0f1f',
+                    palette[1] || palette[0] || '#14213d',
+                    palette[2] || palette[0] || '#1f4068',
+                    palette[3] || palette[1] || '#2a9d8f',
+                    palette[4] || palette[2] || '#264653'
+                ]
+
+                if (config.gradientType === 'linear') {
+                    const angle = (config.gradientAngle * Math.PI) / 180
+                    const gradient = ctx.createLinearGradient(
+                        width / 2 - Math.cos(angle) * width,
+                        height / 2 - Math.sin(angle) * height,
+                        width / 2 + Math.cos(angle) * width,
+                        height / 2 + Math.sin(angle) * height
+                    )
+                    gradient.addColorStop(0, colors[0])
+                    gradient.addColorStop(0.25, colors[1])
+                    gradient.addColorStop(0.5, colors[2])
+                    gradient.addColorStop(0.75, colors[3])
+                    gradient.addColorStop(1, colors[4])
+                    ctx.fillStyle = gradient
+                    ctx.fillRect(0, 0, width, height)
+                } else if (config.gradientType === 'radial') {
+                    // Base gradient
+                    const baseGradient = ctx.createLinearGradient(0, 0, 0, height)
+                    baseGradient.addColorStop(0, colors[3])
+                    baseGradient.addColorStop(1, colors[4])
+                    ctx.fillStyle = baseGradient
+                    ctx.fillRect(0, 0, width, height)
+
+                    // Radial overlays
+                    const positions = [
+                        [0.15, 0.20, colors[0]],
+                        [0.85, 0.20, colors[1]],
+                        [0.50, 0.80, colors[2]]
+                    ]
+                    positions.forEach(([x, y, color]) => {
+                        const radialGradient = ctx.createRadialGradient(
+                            width * x, height * y, 0,
+                            width * x, height * y, Math.min(width, height) * 0.45
+                        )
+                        radialGradient.addColorStop(0, color)
+                        radialGradient.addColorStop(1, hexToRgba(color, 0))
+                        ctx.fillStyle = radialGradient
+                        ctx.fillRect(0, 0, width, height)
+                    })
+                } else {
+                    // Organic gradient (default)
+                    const baseGradient = ctx.createLinearGradient(0, 0, width, height)
+                    baseGradient.addColorStop(0, hexToRgba(colors[4], 0.95))
+                    baseGradient.addColorStop(1, hexToRgba(colors[0], 0.88))
+                    ctx.fillStyle = baseGradient
+                    ctx.fillRect(0, 0, width, height)
+
+                    // Organic radial overlays
+                    const organicPositions = [
+                        [0.18, 0.24, 0.45, 0.45, colors[0], 0.82],
+                        [0.74, 0.20, 0.40, 0.40, colors[1], 0.8],
+                        [0.30, 0.80, 0.42, 0.42, colors[2], 0.78],
+                        [0.78, 0.72, 0.38, 0.38, colors[3], 0.75]
+                    ]
+                    organicPositions.forEach(([x, y, radiusX, radiusY, color, alpha]) => {
+                        const radialGradient = ctx.createRadialGradient(
+                            width * x, height * y, 0,
+                            width * x, height * y, Math.min(width * radiusX, height * radiusY)
+                        )
+                        radialGradient.addColorStop(0, hexToRgba(color, alpha))
+                        radialGradient.addColorStop(0.7, hexToRgba(color, 0))
+                        ctx.fillStyle = radialGradient
+                        ctx.fillRect(0, 0, width, height)
+                    })
+                }
+
+                document.body.removeChild(tempDiv)
+            }
+
+            // Draw 3D scene on top
+            ctx.drawImage(gl.domElement, 0, 0, width, height)
+
+            dataURL = compositeCanvas.toDataURL('image/png')
+        }
+
         const link = document.createElement('a')
-        link.download = `background-${ratioLabel.replace(':', '-')}-${Date.now()}.png`
+        const filename = matchCurrentView
+            ? `background-current-view-${Date.now()}.png`
+            : `background-${ratioLabel.replace(':', '-')}-${Date.now()}.png`
+        link.download = filename
         link.href = dataURL
         link.click()
 
         gl.setSize(originalSize.width, originalSize.height, false)
         camera.aspect = originalAspect
+        camera.fov = originalFov
         camera.updateProjectionMatrix()
     }
 
@@ -236,7 +376,6 @@ export default function Scene() {
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <Environment preset="city" />
-                <ContactShadows position={[0, -10, 0]} opacity={0.4} scale={40} blur={2} far={20} />
                 <PlaneGroup
                     data={planes}
                     size={config.size}
