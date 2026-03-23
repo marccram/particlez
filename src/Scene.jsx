@@ -1,4 +1,4 @@
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { PerspectiveCamera, OrbitControls, Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import { useState, useEffect, useMemo, useRef } from 'react'
@@ -62,12 +62,20 @@ const INITIAL_CONFIG = {
 }
 
 function CameraRig({ targetPosition }) {
-    const vec = new THREE.Vector3()
-    useFrame((state) => {
-        state.camera.position.lerp(vec.set(...targetPosition), 0.05)
-        state.camera.lookAt(0, 0, 0)
-    })
-    return null
+    const { camera } = useThree()
+    const controlsRef = useRef(null)
+    const prevTarget = useRef(null)
+
+    useEffect(() => {
+        const key = targetPosition.join(',')
+        if (prevTarget.current === key) return
+        prevTarget.current = key
+        camera.position.set(...targetPosition)
+        camera.lookAt(0, 0, 0)
+        if (controlsRef.current) controlsRef.current.update()
+    }, [targetPosition, camera])
+
+    return <OrbitControls ref={controlsRef} enablePan={true} enableZoom={true} enableRotate={true} makeDefault />
 }
 
 export default function Scene() {
@@ -370,9 +378,8 @@ export default function Scene() {
                 }}
                 style={{ position: 'relative', zIndex: 1 }}
             >
-                <CameraRig targetPosition={targetCameraPos} />
                 <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
-                <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+                <CameraRig targetPosition={targetCameraPos} />
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <Environment preset="city" />
